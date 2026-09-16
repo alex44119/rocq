@@ -13,23 +13,32 @@ Set Implicit Arguments.
 Require Export Notations.
 Require Import Ltac.
 
+Local Set Universe Polymorphism.
+
 (** * Propositional connectives *)
 
 (** [True] is the always true proposition *)
 
-Inductive True : Prop :=
-  I : True.
+Inductive trivial@{s;l} : Type@{s;l} :=
+  trivial_cons : trivial.
+
+Definition True : Prop := trivial@{Prop;_}.
+Definition I : True := trivial_cons@{Prop;_}.
 
 Register True as core.True.type.
 Register I as core.True.I.
 
 (** [False] is the always false proposition *)
-Inductive False : Prop :=.
+
+Inductive empty@{s;l} : Type@{s;l} :=.
+
+Definition False : Prop := empty@{Prop;_}.
 
 Register False as core.False.type.
 
 (** [not A], written [~A], is the negation of [A] *)
-Definition not (A:Prop) := A -> False.
+Definition not_sortpoly@{sa s;la l} (A:Type@{sa;la}) := A -> empty@{s;l}.
+Definition not : Prop -> Prop := not_sortpoly@{Prop Prop;_ _}.
 
 Notation "~ x" := (not x) : type_scope.
 
@@ -37,7 +46,7 @@ Register not as core.not.type.
 
 (** Negation of a type in [Type] *)
 
-Definition notT (A:Type) := A -> False.
+Definition notT := not_sortpoly@{Type Prop;_ _}.
 
 (** Create the "core" hint database, and set its transparent state for
   variables and constants explicitly. *)
@@ -58,37 +67,58 @@ Hint Unfold not: core.
 
       [proj1] and [proj2] are first and second projections of a conjunction *)
 
-Inductive and (A B:Prop) : Prop :=
-  conj : A -> B -> A /\ B
+Inductive and_sortpoly@{sa sb s;la lb l}
+  (A : Type@{sa;la}) (B : Type@{sb;lb}) : Type@{s;l} :=
+    conj_sortpoly : A -> B -> and_sortpoly A B.
 
-where "A /\ B" := (and A B) : type_scope.
+Definition and : Prop -> Prop -> Prop := and_sortpoly@{Prop Prop Prop;_ _ _}.
+Notation "A /\ B" := (and A B) : type_scope.
+Definition conj : forall A B : Prop, A -> B -> A /\ B
+  := conj_sortpoly@{Prop Prop Prop;_ _ _}.
 
 Register and as core.and.type.
 Register conj as core.and.conj.
 
 Section Conjunction.
 
-  Variables A B : Prop.
+  Sort sa sb se.
+  Universes la lb le.
 
-  Theorem proj1 : A /\ B -> A.
+  Constraint se->sa.
+  Constraint se->sb.
+
+  Variables (A : Type@{sa;la}) (B : Type@{sb;lb}).
+
+  Theorem proj1_sortpoly : and_sortpoly@{sa sb se;la lb le} A B -> A.
   Proof.
     destruct 1; trivial.
   Qed.
 
-  Theorem proj2 : A /\ B -> B.
+  Theorem proj2_sortpoly : and_sortpoly@{sa sb se;la lb le} A B -> B.
   Proof.
     destruct 1; trivial.
   Qed.
 
 End Conjunction.
 
+Definition proj1 : forall A B : Prop, A /\ B -> A 
+  := proj1_sortpoly@{Prop Prop Prop; _ _ _}.
+Definition proj2 : forall A B : Prop, A /\ B -> B 
+  := proj2_sortpoly@{Prop Prop Prop; _ _ _}.
+
 (** [or A B], written [A \/ B], is the disjunction of [A] and [B] *)
 
-Inductive or (A B:Prop) : Prop :=
-  | or_introl : A -> A \/ B
-  | or_intror : B -> A \/ B
+Inductive or_sortpoly@{sa sb s;la lb l} 
+  (A : Type@{sa;la}) (B : Type@{sb;lb}) : Type@{s;l} :=
+  | or_introl_sortpoly : A -> or_sortpoly A B
+  | or_intror_sortpoly : B -> or_sortpoly A B.
 
-where "A \/ B" := (or A B) : type_scope.
+Definition or : Prop -> Prop -> Prop := or_sortpoly@{Prop Prop Prop;_ _ _}.
+Notation "A \/ B" := (or A B) : type_scope.
+Definition or_introl : forall A B : Prop, A -> A \/ B
+  := or_introl_sortpoly@{Prop Prop Prop;_ _ _}.
+Definition or_intror : forall A B : Prop, B -> A \/ B
+  := or_intror_sortpoly@{Prop Prop Prop;_ _ _}.
 
 Arguments or_introl [A B] _, [A] B _.
 Arguments or_intror [A B] _, A [B] _.
@@ -97,7 +127,11 @@ Register or as core.or.type.
 
 (** [iff A B], written [A <-> B], expresses the equivalence of [A] and [B] *)
 
-Definition iff (A B:Prop) := (A -> B) /\ (B -> A).
+Definition iff_sortpoly@{sa sb s;la lb l u} 
+  (A : Type@{sa;la}) (B : Type@{sb;lb}) : Type@{s;l} :=
+  and_sortpoly@{sb sa s;u u l} (A -> B) (B -> A).
+Definition iff : Prop -> Prop -> Prop := 
+  iff_sortpoly@{Prop Prop Prop;_ _ _ _}.
 
 Notation "A <-> B" := (iff A B) : type_scope.
 
