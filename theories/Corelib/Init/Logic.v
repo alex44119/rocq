@@ -216,10 +216,7 @@ Qed.
 
 (** Some equivalences *)
 
-Theorem neg_false@{sa se so;+} : forall A : Type@{sa;_}, 
-  iff_sortpoly@{se se so; _ _ _} 
-    (not_sortpoly@{sa se; _ _} A )
-    (iff_sortpoly@{sa se se; _ _ _} A empty@{se;_}).
+Theorem neg_false : forall A : Prop, ~ A <-> (A <-> False).
 Proof.
   intro A; unfold not; split.
   - intro H. split. unfold not_sortpoly in H. exact H. intro H1. elim H1.
