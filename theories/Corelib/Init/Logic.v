@@ -19,7 +19,7 @@ Local Set Universe Polymorphism.
 
 (** [True] is the always true proposition *)
 
-Inductive trivial@{s;l} : Type@{s;l} :=
+Inductive trivial@{s;+} : Type@{s;_} :=
   trivial_cons : trivial.
 
 Definition True : Prop := trivial@{Prop;_}.
@@ -30,14 +30,14 @@ Register I as core.True.I.
 
 (** [False] is the always false proposition *)
 
-Inductive empty@{s;l} : Type@{s;l} :=.
+Inductive empty@{s;+} : Type@{s;_} :=.
 
 Definition False : Prop := empty@{Prop;_}.
 
 Register False as core.False.type.
 
 (** [not A], written [~A], is the negation of [A] *)
-Definition not_sortpoly@{sa s;la l} (A:Type@{sa;la}) := A -> empty@{s;l}.
+Definition not_sortpoly@{sa s;+} (A:Type@{sa;_}) := A -> empty@{s;_}.
 Definition not : Prop -> Prop := not_sortpoly@{Prop Prop;_ _}.
 
 Notation "~ x" := (not x) : type_scope.
@@ -67,8 +67,8 @@ Hint Unfold not: core.
 
       [proj1] and [proj2] are first and second projections of a conjunction *)
 
-Inductive and_sortpoly@{sa sb s;la lb l}
-  (A : Type@{sa;la}) (B : Type@{sb;lb}) : Type@{s;l} :=
+Inductive and_sortpoly@{sa sb s;+}
+  (A : Type@{sa;_}) (B : Type@{sb;_}) : Type@{s;_} :=
     conj_sortpoly : A -> B -> and_sortpoly A B.
 
 Definition and : Prop -> Prop -> Prop := and_sortpoly@{Prop Prop Prop;_ _ _}.
@@ -82,19 +82,18 @@ Register conj as core.and.conj.
 Section Conjunction.
 
   Sort sa sb se.
-  Universes la lb le.
 
   Constraint se->sa.
   Constraint se->sb.
 
-  Variables (A : Type@{sa;la}) (B : Type@{sb;lb}).
+  Variables (A : Type@{sa;_}) (B : Type@{sb;_}).
 
-  Theorem proj1_sortpoly : and_sortpoly@{sa sb se;la lb le} A B -> A.
+  Theorem proj1_sortpoly : and_sortpoly@{sa sb se;_ _ _} A B -> A.
   Proof.
     destruct 1; trivial.
   Qed.
 
-  Theorem proj2_sortpoly : and_sortpoly@{sa sb se;la lb le} A B -> B.
+  Theorem proj2_sortpoly : and_sortpoly@{sa sb se;_ _ _} A B -> B.
   Proof.
     destruct 1; trivial.
   Qed.
@@ -108,8 +107,8 @@ Definition proj2 : forall A B : Prop, A /\ B -> B
 
 (** [or A B], written [A \/ B], is the disjunction of [A] and [B] *)
 
-Inductive or_sortpoly@{sa sb s;la lb l} 
-  (A : Type@{sa;la}) (B : Type@{sb;lb}) : Type@{s;l} :=
+Inductive or_sortpoly@{sa sb s;+} 
+  (A : Type@{sa;_}) (B : Type@{sb;_}) : Type@{s;_} :=
   | or_introl_sortpoly : A -> or_sortpoly A B
   | or_intror_sortpoly : B -> or_sortpoly A B.
 
@@ -127,11 +126,13 @@ Register or as core.or.type.
 
 (** [iff A B], written [A <-> B], expresses the equivalence of [A] and [B] *)
 
-Definition iff_sortpoly@{sa sb s;la lb l u} 
-  (A : Type@{sa;la}) (B : Type@{sb;lb}) : Type@{s;l} :=
-  and_sortpoly@{sb sa s;u u l} (A -> B) (B -> A).
+Definition iff_sortpoly@{sa sb s;+} 
+  (A : Type@{sa;_}) (B : Type@{sb;_}) : Type@{s;_} :=
+  and_sortpoly@{sb sa s;_ _ _} (A -> B) (B -> A).
 Definition iff : Prop -> Prop -> Prop := 
-  iff_sortpoly@{Prop Prop Prop;_ _ _ _}.
+  iff_sortpoly@{Prop Prop Prop;_ _ _}.
+
+Print iff_sortpoly.
 
 Notation "A <-> B" := (iff A B) : type_scope.
 
@@ -215,10 +216,13 @@ Qed.
 
 (** Some equivalences *)
 
-Theorem neg_false : forall A : Prop, ~ A <-> (A <-> False).
+Theorem neg_false@{sa se so;+} : forall A : Type@{sa;_}, 
+  iff_sortpoly@{se se so; _ _ _} 
+    (not_sortpoly@{sa se; _ _} A )
+    (iff_sortpoly@{sa se se; _ _ _} A empty@{se;_}).
 Proof.
   intro A; unfold not; split.
-  - intro H; split; [exact H | intro H1; elim H1].
+  - intro H. split. unfold not_sortpoly in H. exact H. intro H1. elim H1.
   - intros [H _]; exact H.
 Qed.
 
