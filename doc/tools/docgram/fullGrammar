@@ -33,7 +33,7 @@ sort: [
 | typeloc "@{" test_sort_qvar reference ";" universe "}"
 | typeloc "@{" universe "}"
 | "Univ" "@{" test_sort_qvar reference ";" universe "}"
-| "Univ" "@{" universe "}"
+| "Univ" "@{" OPT [ "_" ";" ] universe "}"
 | "Univ"
 ]
 
