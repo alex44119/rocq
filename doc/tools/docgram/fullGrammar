@@ -30,7 +30,6 @@ sort: [
 | "Prop"
 | "SProp"
 | typeloc
-| typeloc "@{" "_" "}"
 | typeloc "@{" test_sort_qvar reference ";" universe "}"
 | typeloc "@{" universe "}"
 | "Univ" "@{" test_sort_qvar reference ";" universe "}"
