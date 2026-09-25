@@ -381,7 +381,7 @@ GRAMMAR EXTEND Gram
               let () = Option.iter (fun loc -> warn_old_sort_syntax ~loc ()) is_pipe in
               List.map (force_quality ~loc) l, List.map (force_univ_level ~loc) l'
           in
-          Some (l,l')
+          Some { qualities = l; levels = l' }
         }
       | -> { None } ] ]
   ;
