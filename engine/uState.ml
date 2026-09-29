@@ -428,10 +428,8 @@ type univ_names = UnivNames.universe_binders * (uinfo QVar.Map.t * uinfo Level.M
 type t =
  { names : univ_names; (** Printing/location information *)
    local : PContextSet.t; (** The local graph of universes (variables and constraints) *)
-   univ_variables : UnivFlex.t;
-   (** The local universes that are unification variables *)
-   sort_variables : QState.t;
-   (** Local quality variables. *)
+   univ_variables : UnivFlex.t; (** The local universes that are unification variables *)
+   sort_variables : QState.t; (** Local quality variables. *)
    universes : UGraph.t; (** The current graph extended with the local constraints *)
    initial_universes : UGraph.t; (** The graph at the creation of the evar_map + local universes
                                      (but not local constraints) *)
