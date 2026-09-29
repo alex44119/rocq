@@ -2888,23 +2888,25 @@ let internalize ?(self=default) genv env lvar c =
 (* Functions to translate constr_expr into glob_constr                    *)
 (**************************************************************************)
 
-let extract_ids env =
+let extract_ids (env : Environ.env) : notation_var_binders =
   List.fold_right Id.Set.add
     (Termops.ids_of_rel_context (Environ.rel_context env))
     Id.Set.empty
 
-let bound_univs sigma = Evd.universe_binders sigma
+let bound_univs (sigma : Evd.evar_map) : UnivNames.universe_binders = Evd.universe_binders sigma
 
-let scope_of_type_kind env sigma = function
-  | IsType -> Notation.current_type_scope_names ()
-  | OfType typ -> compute_type_scope env sigma typ
-  | WithoutTypeConstraint -> []
+let scope_of_type_kind (env : Environ.env) (sigma : Evd.evar_map) : typing_constraint -> var_unique_id list =
+  function
+    | IsType -> Notation.current_type_scope_names ()
+    | OfType typ -> compute_type_scope env sigma typ
+    | WithoutTypeConstraint -> []
 
-let allowed_binder_kind_of_type_kind = function
-  | IsType -> AbsPi
-  | OfType _ | WithoutTypeConstraint -> AbsLambda
+let allowed_binder_kind_of_type_kind : typing_constraint -> abstraction_kind =
+  function
+    | IsType -> AbsPi
+    | OfType _ | WithoutTypeConstraint -> AbsLambda
 
-let empty_ltac_sign = {
+let empty_ltac_sign : ltac_sign= {
   ltac_vars = Id.Set.empty;
   ltac_bound = Id.Set.empty;
   ltac_extra = Genintern.Store.empty;
@@ -2912,7 +2914,7 @@ let empty_ltac_sign = {
 
 let intern_gen ?self kind env sigma
                ?(impls=empty_internalization_env) ?strict_check ?(pattern_mode=false) ?(ltacvars=empty_ltac_sign)
-               c =
+               c : glob_constr =
   let tmp_scope = Option.cata (scope_of_type_kind env sigma) [] kind in
   let k = Option.map allowed_binder_kind_of_type_kind kind in
   internalize ?self env {ids = extract_ids env; strict_check; pattern_mode;
@@ -2921,7 +2923,7 @@ let intern_gen ?self kind env sigma
                    impls; binder_block_names = Some k; ntn_binding_ids = Id.Set.empty}
     (ltacvars, Id.Map.empty) c
 
-let intern_unknown_if_term_or_type env sigma c =
+let intern_unknown_if_term_or_type (env : Environ.env) (sigma : Evd.evar_map) (c : constr_expr) : glob_constr =
   intern_gen None env sigma c
 
 let intern_gen ?self kind env sigma ?impls ?strict_check ?pattern_mode ?ltacvars c =
