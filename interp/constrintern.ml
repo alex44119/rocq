@@ -1266,7 +1266,7 @@ let intern_sort ~local_univs (q,l) =
   Option.map (intern_quality ~local_univs) q,
   map_glob_sort_gen (List.map (on_fst (intern_sort_name ~local_univs))) l
 
-let intern_instance ~local_univs = function
+let intern_instance ~local_univs : instance_expr option -> glob_instance option = function
   | None -> None
   | Some (qs, us) ->
     let qs = List.map (intern_quality ~local_univs) qs in
