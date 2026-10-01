@@ -198,6 +198,13 @@ let pr_sort_name_expr = function
   | CType qid -> pr_qualid qid
   | CRawType s -> Univ.Level.raw_pr s
 
+let pr_glob_sort_name = function (* glob_constr version of the above function *)
+  | GSProp -> str "SProp"
+  | GProp -> str "Prop"
+  | GSet -> str "Set"
+  | GUniv l | GRawUniv l -> Univ.Level.raw_pr l
+  | GLocalUniv id -> Id.print id.CAst.v
+
 let pr_univ_level_expr = function
   | UNamed s -> tag_type (pr_sort_name_expr s)
   | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
@@ -206,10 +213,20 @@ let pr_univ_level_expr = function
 let pr_univ_expr (u,n) =
   tag_type (pr_sort_name_expr u) ++ (match n with 0 -> mt () | _ -> str"+" ++ int n)
 
+let pr_glob_univ (u,n) = (* glob_constr version of the above function *)
+  tag_type (pr_glob_sort_name u) ++ (match n with 0 -> mt () | _ -> str"+" ++ int n)
+
 let pr_univ l =
   match l with
   | UNamed [x] -> pr_univ_expr x
   | UNamed l -> str"max(" ++ prlist_with_sep (fun () -> str",") pr_univ_expr l ++ str")"
+  | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
+  | UAnonymous {rigid=UnivFlexible _} -> tag_type (str "_")
+
+let pr_univ_glob l = (* glob_constr version of the above function *)
+  match l with
+  | UNamed [x] -> pr_glob_univ x
+  | UNamed l -> str"max(" ++ prlist_with_sep (fun () -> str",") pr_glob_univ l ++ str")"
   | UAnonymous {rigid=UnivRigid} -> tag_type (str "Type")
   | UAnonymous {rigid=UnivFlexible _} -> tag_type (str "_")
 
@@ -218,6 +235,11 @@ let pr_quality_expr = function
   | CQVar qid -> tag_type (pr_qualid qid)
   | CRawQuality q -> tag_type (Sorts.Quality.raw_pr q)
   | CQConstant q -> tag_type (Sorts.Quality.Constants.pr q)
+
+let pr_glob_quality = function (* glob_constr version of the above function *)
+  | GLocalQVar name -> Names.Name.print name.CAst.v
+  | GQuality q -> Sorts.Quality.raw_pr q
+  | GRawQVar q -> Sorts.Quality.raw_pr (Sorts.Quality.QVar q)
 
 let pr_relevance = function
   | CRelevant -> str "Relevant"
@@ -242,6 +264,15 @@ let pr_sort_expr : sort_expr -> Pp.t = function
   | None, l -> hov 0 (tag_type (str "Type") ++ pr_univ_annot pr_univ l)
   | Some (CQAnon _), UAnonymous {rigid=UnivRigid} -> tag_type (str "Univ")
   | u -> hov 0 (tag_type (str "Univ") ++ pr_univ_annot pr_quality_univ u)
+
+let pr_glob_sort = function (* glob_constr version of the above function *)
+  | None, UNamed [GSProp, 0] -> str "SProp"
+  | None, UNamed [GProp, 0] -> str "Prop"
+  | None, UNamed [GSet, 0] -> str "Set"
+  | None, UAnonymous {rigid = UnivRigid} -> str "Type"
+  | None, u -> str "Type@{" ++ pr_univ_glob u ++ str "}"
+  | Some q, u ->
+      str "Univ@{" ++ pr_glob_quality q ++ str " ; " ++ pr_univ_glob u ++ str "}"
 
 let pr_qualid sp =
   let (sl, id) = repr_qualid sp in
