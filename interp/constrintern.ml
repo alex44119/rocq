@@ -1383,7 +1383,7 @@ let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
                   ++ str " its expanded head does not start with a reference")
       in
       let c = match us, DAst.get c with
-      | None, _ -> c
+      | None, _  | Some ([],[]), _ -> c
       | Some _, GRef (ref, None) -> DAst.make ?loc @@ GRef (ref, us)
       | Some _, GApp (r, arg) ->
         let loc' = r.CAst.loc in
