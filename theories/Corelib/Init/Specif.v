@@ -12,6 +12,7 @@
 
 Set Implicit Arguments.
 Set Reversible Pattern Implicit.
+Local Set Universe Polymorphism.
 
 Require Import Notations.
 Require Import Ltac.
@@ -20,49 +21,45 @@ Require Import Logic.
 
 (** Subsets and Sigma-types *)
 
-(** [(sig A P)], or more suggestively [{x:A | P x}], denotes the subset
+(** [(sigma A P)], or more suggestively [{x:A | P x}], denotes the subset
     of elements of the type [A] which satisfy the predicate [P].
-    Similarly [(sig2 A P Q)], or [{x:A | P x & Q x}], denotes the subset
+    Similarly [(sigma2 A P Q)], or [{x:A | P x & Q x}], denotes the subset
     of elements of the type [A] which satisfy both [P] and [Q]. *)
 
-#[universes(template)]
-Inductive sig (A:Type) (P:A -> Prop) : Type :=
-    exist : forall x:A, P x -> sig P.
+Inductive sigma@{sa sp s;+}
+  (A:Univ@{sa;_}) (P : A -> Univ@{sp;_}) : Univ@{s;_} :=
+    witness : forall x:A, P x -> sigma P.
 
-Register sig as core.sig.type.
-Register exist as core.sig.intro.
-Register sig_rect as core.sig.rect.
+Abbreviation sig := sigma@{Type Prop Type;_ _ _}.
+Abbreviation exist := witness@{Type Prop Type;_ _ _}.
 
-#[universes(template)]
-Inductive sig2 (A:Type) (P Q:A -> Prop) : Type :=
-    exist2 : forall x:A, P x -> Q x -> sig2 P Q.
+Register sigma as core.sigma.type'.
+Register witness as core.sigma.intro'.
+Register sigma_poly_rec as core.sig.rec.
+
+Inductive sigma2@{sa sp sq s;+} (A:Univ@{sa;_})
+  (P : A -> Univ@{sp;_}) (Q : A -> Univ@{sq;_}) : Univ@{s;_} :=
+    witness2 : forall x: A, P x -> Q x -> sigma2 P Q.
+
+Abbreviation sig2 := sigma2@{Type Prop Prop Type;_ _ _ _}.
+Abbreviation exist2 := witness2@{Type Prop Prop Type;_ _ _ _}.
 
 (** [(sigT A P)], or more suggestively [{x:A & (P x)}] is a Sigma-type.
     Similarly for [(sigT2 A P Q)], also written [{x:A & (P x) & (Q x)}]. *)
 
-#[universes(template)]
-Inductive sigT (A:Type) (P:A -> Type) : Type :=
-    existT : forall x:A, P x -> sigT P.
-
-Register sigT as core.sigT.type.
-Register existT as core.sigT.intro.
-Register sigT_rect as core.sigT.rect.
-
-#[universes(template)]
-Inductive sigT2 (A:Type) (P Q:A -> Type) : Type :=
-    existT2 : forall x:A, P x -> Q x -> sigT2 P Q.
+Abbreviation sigT := sigma@{Type Type Type;_ _ _}.
+Abbreviation existT := witness@{Type Type Type;_ _ _}.
+Abbreviation sigT2 := sigma2@{Type Type Type Type;_ _ _ _}.
+Abbreviation existT2 := witness2@{Type Type Type Type;_ _ _ _}.
 
 (* Notations *)
 
-Arguments sig (A P)%_type.
-Arguments sig2 (A P Q)%_type.
-Arguments sigT (A P)%_type.
-Arguments sigT2 (A P Q)%_type.
+(* Arguments sigma (A P)%_type.
 
-Notation "{ x | P }" := (sig (fun x => P%_type)) : type_scope.
-Notation "{ x | P & Q }" := (sig2 (fun x => P%_type) (fun x => Q%_type)) : type_scope.
-Notation "{ x : A | P }" := (sig (A:=A) (fun x => P%_type)) : type_scope.
-Notation "{ x : A | P & Q }" := (sig2 (A:=A) (fun x => P%_type) (fun x => Q%_type)) :
+Notation "{ x | P }" := (sigma (fun x => P%_type)) : type_scope.
+Notation "{ x | P & Q }" := (sigma2 (fun x => P%_type) (fun x => Q%_type)) : type_scope.
+Notation "{ x : A | P }" := (sigma (A:=A) (fun x => P%_type)) : type_scope.
+Notation "{ x : A | P & Q }" := (sigma2 (A:=A) (fun x => P%_type) (fun x => Q%_type)) :
   type_scope.
 Notation "{ x & P }" := (sigT (fun x => P%_type)) : type_scope.
 Notation "{ x & P & Q }" := (sigT2 (fun x => P%_type) (fun x => Q%_type)) : type_scope.
@@ -70,10 +67,10 @@ Notation "{ x : A & P }" := (sigT (A:=A) (fun x => P%_type)) : type_scope.
 Notation "{ x : A & P & Q }" := (sigT2 (A:=A) (fun x => P%_type) (fun x => Q)) :
   type_scope.
 
-Notation "{ ' pat | P }" := (sig (fun pat => P%_type)) : type_scope.
-Notation "{ ' pat | P & Q }" := (sig2 (fun pat => P%_type) (fun pat => Q%_type)) : type_scope.
-Notation "{ ' pat : A | P }" := (sig (A:=A) (fun pat => P%_type)) : type_scope.
-Notation "{ ' pat : A | P & Q }" := (sig2 (A:=A) (fun pat => P%_type) (fun pat => Q%_type)) :
+Notation "{ ' pat | P }" := (sigma (fun pat => P%_type)) : type_scope.
+Notation "{ ' pat | P & Q }" := (sigma2 (fun pat => P%_type) (fun pat => Q%_type)) : type_scope.
+Notation "{ ' pat : A | P }" := (sigma (A:=A) (fun pat => P%_type)) : type_scope.
+Notation "{ ' pat : A | P & Q }" := (sigma2 (A:=A) (fun pat => P%_type) (fun pat => Q%_type)) :
   type_scope.
 Notation "{ ' pat & P }" := (sigT (fun pat => P%_type)) : type_scope.
 Notation "{ ' pat & P & Q }" := (sigT2 (fun pat => P%_type) (fun pat => Q%_type)) : type_scope.
@@ -81,10 +78,7 @@ Notation "{ ' pat : A & P }" := (sigT (A:=A) (fun pat => P%_type)) : type_scope.
 Notation "{ ' pat : A & P & Q }" := (sigT2 (A:=A) (fun pat => P%_type) (fun pat => Q%_type)) :
   type_scope.
 
-Add Printing Let sig.
-Add Printing Let sig2.
-Add Printing Let sigT.
-Add Printing Let sigT2.
+Add Printing Let sigma. *)
 
 
 (** Projections of [sig]
@@ -97,23 +91,31 @@ Add Printing Let sigT2.
 (* Set Universe Polymorphism. *)
 Section Subset_projections.
 
-  Variable A : Type.
-  Variable P : A -> Prop.
+  Sort sa sp s.
 
-  Definition proj1_sig (e:sig P) := match e with
-                                    | exist _ a b => a
+  Constraint  s->sa.
+
+  Variable A : Univ@{sa ; _}.
+  Variable P : A -> Univ@{sp ; _}.
+
+  Definition proj1_sigma (e:sigma@{sa sp s;_ _ _} P) := match e with
+                                    | witness _ a b => a
                                     end.
 
-  Definition proj2_sig (e:sig P) :=
-    match e return P (proj1_sig e) with
-    | exist _ a b => b
+  Constraint  s->sp.
+
+  Definition proj2_sigma (e:sigma@{sa sp s;_ _ _} P) :=
+    match e return P (proj1_sigma e) with
+    | witness _ a b => b
     end.
 
-  Register proj1_sig as core.sig.proj1.
-  Register proj2_sig as core.sig.proj2.
+  Register proj1_sigma as core.sig.proj1.
+  Register proj2_sigma as core.sig.proj2.
 
 End Subset_projections.
 
+Abbreviation proj1_sig := proj1_sigma@{Type Prop Type;_ _ _}.
+Abbreviation proj2_sig := proj2_sigma@{Type Prop Type;_ _ _}.
 
 (** [sig2] of a predicate can be projected to a [sig].
 
@@ -123,10 +125,13 @@ End Subset_projections.
     [proj1_sig] of a coerced [X : sig2 P Q] will unify with [let (a,
     _, _) := X in a] *)
 
-Definition sig_of_sig2 (A : Type) (P Q : A -> Prop) (X : sig2 P Q) : sig P
-  := exist P
+Definition sigma_of_sigma2@{sa sp sq s2 s1;+} (A : Univ@{sa;_}) (P : A -> Univ@{sp;_}) (Q : A -> Univ@{sq;_})
+  : sigma2@{_ _ _ s2;_ _ _ _} P Q -> sigma@{_ _ s1;_ _ _} P
+  := fun X => witness P
            (let (a, _, _) := X in a)
            (let (x, p, _) as s return (P (let (a, _, _) := s in a)) := X in p).
+
+Abbreviation sig_of_sig2 := sigma_of_sigma2@{Type Prop Prop Type Type;_ _ _ _ _}.
 
 (** Projections of [sig2]
 
